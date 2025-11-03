@@ -11,6 +11,9 @@ on:
         description: 'Output format (json, csv, txt)'
         required: false
         default: 'txt'
+      session_id:
+        description: 'Unique session identifier for this execution'
+        required: true
 
 jobs:
   subfinder-scan:
@@ -32,11 +35,19 @@ jobs:
     - name: Run Subfinder
       run: |
         mkdir -p results
-        subfinder -d ${{ github.event.inputs.target_domain }} -o results/subdomains.${{ github.event.inputs.output_format }}
+        echo "Starting subfinder scan for ${{ github.event.inputs.target_domain }}" > results/scan_log.txt
+        echo "Session ID: ${{ github.event.inputs.session_id }}" >> results/scan_log.txt
+        echo "Timestamp: $(date)" >> results/scan_log.txt
+        subfinder -d ${{ github.event.inputs.target_domain }} -o results/subdomains.${{ github.event.inputs.output_format }} 2>> results/scan_log.txt || echo "Subfinder completed with exit code $?" >> results/scan_log.txt
+        echo "Files in results directory:" >> results/scan_log.txt
+        ls -la results/ >> results/scan_log.txt
+        echo "Subdomains file content:" >> results/scan_log.txt
+        cat results/subdomains.${{ github.event.inputs.output_format }} >> results/scan_log.txt 2>/dev/null || echo "No subdomains file found" >> results/scan_log.txt
 
     - name: Upload results
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: subfinder-results
+        name: subfinder-results-${{ github.event.inputs.session_id }}
         path: results/
         retention-days: 7
