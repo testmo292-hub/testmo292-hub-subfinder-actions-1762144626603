@@ -39,10 +39,17 @@ jobs:
         echo "Session ID: ${{ github.event.inputs.session_id }}" >> results/scan_log.txt
         echo "Timestamp: $(date)" >> results/scan_log.txt
         subfinder -d ${{ github.event.inputs.target_domain }} -o results/subdomains.${{ github.event.inputs.output_format }} 2>> results/scan_log.txt || echo "Subfinder completed with exit code $?" >> results/scan_log.txt
-        echo "Files in results directory:" >> results/scan_log.txt
+        echo "" >> results/scan_log.txt
+        echo "=== SUBFINDER OUTPUT ===" >> results/scan_log.txt
+        cat results/subdomains.${{ github.event.inputs.output_format }} >> results/scan_log.txt 2>/dev/null || echo "No subdomains file found or file is empty" >> results/scan_log.txt
+        echo "" >> results/scan_log.txt
+        echo "=== DIRECTORY LISTING ===" >> results/scan_log.txt
         ls -la results/ >> results/scan_log.txt
-        echo "Subdomains file content:" >> results/scan_log.txt
-        cat results/subdomains.${{ github.event.inputs.output_format }} >> results/scan_log.txt 2>/dev/null || echo "No subdomains file found" >> results/scan_log.txt
+        echo "" >> results/scan_log.txt
+        echo "=== FILE SIZES ===" >> results/scan_log.txt
+        du -h results/* >> results/scan_log.txt 2>/dev/null || echo "No files to check sizes" >> results/scan_log.txt
+        # Ensure subdomains file exists even if empty
+        touch results/subdomains.${{ github.event.inputs.output_format }}
 
     - name: Upload results
       if: always()
